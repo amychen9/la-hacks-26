@@ -59,6 +59,8 @@
           required
         />
 
+        <ScreenshotUpload /> <!-- amy: make upload feature appear and work visually  -->
+
         <SlideToggle
           v-if="daysOnlyEnabled && !edit"
           class="tw-w-full"
@@ -455,6 +457,7 @@
 </style>
 
 <script>
+import ScreenshotUpload from "@/components/ScreenshotUpload.vue"; // amy: importing the component needed for screenshot uploads  
 import { eventTypes, dayIndexToDayString, authTypes } from "@/constants"
 import {
   post,
@@ -501,6 +504,7 @@ export default {
   },
 
   components: {
+    ScreenshotUpload,
     TimezoneSelector,
     HelpDialog,
     EmailInput,
