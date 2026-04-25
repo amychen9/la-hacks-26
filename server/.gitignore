@@ -1,0 +1,5 @@
+tmp
+.env
+.vscode/*
+!.vscode/tasks.json
+schej-service-account-key.json

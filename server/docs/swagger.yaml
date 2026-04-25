@@ -1,0 +1,1653 @@
+definitions:
+  calendar.CalendarEventsWithError:
+    properties:
+      calendarEvents:
+        items:
+          $ref: '#/definitions/models.CalendarEvent'
+        type: array
+      error:
+        type: error
+    type: object
+  commands.Response:
+    properties:
+      blocks:
+        type: string
+      response_type:
+        description: ephemeral or in_channel
+        type: string
+      text:
+        type: string
+    type: object
+  models.AppleCalendarAuth:
+    type: object
+  models.Attendee:
+    properties:
+      _id:
+        type: string
+      declined:
+        type: boolean
+      email:
+        type: string
+      eventId:
+        type: string
+    type: object
+  models.BufferTimeOptions:
+    properties:
+      enabled:
+        type: boolean
+      time:
+        type: integer
+    type: object
+  models.CalendarAccount:
+    properties:
+      appleCalendarAuth:
+        $ref: '#/definitions/models.AppleCalendarAuth'
+        type: object
+      calendarType:
+        type: string
+      email:
+        description: Email is required for all calendar accounts
+        type: string
+      enabled:
+        type: boolean
+      oAuth2CalendarAuth:
+        $ref: '#/definitions/models.OAuth2CalendarAuth'
+        type: object
+      picture:
+        type: string
+      subCalendars:
+        additionalProperties:
+          $ref: '#/definitions/models.SubCalendar'
+        type: object
+    type: object
+  models.CalendarEvent:
+    properties:
+      allDay:
+        description: Whether the event is an all day event
+        type: boolean
+      calendarId:
+        type: string
+      endDate:
+        type: string
+      free:
+        description: Whether the user is free during this event
+        type: boolean
+      id:
+        type: string
+      startDate:
+        type: string
+      summary:
+        type: string
+    type: object
+  models.CalendarOptions:
+    properties:
+      bufferTime:
+        $ref: '#/definitions/models.BufferTimeOptions'
+        type: object
+      workingHours:
+        $ref: '#/definitions/models.WorkingHoursOptions'
+        type: object
+    type: object
+  models.CalendarType:
+    type: string
+  models.Event:
+    properties:
+      _id:
+        type: string
+      attendees:
+        description: Attendees for an availability group (fetched from Attendees collection)
+        items:
+          $ref: '#/definitions/models.Attendee'
+        type: array
+      blindAvailabilityEnabled:
+        description: Whether to enable blind availability
+        type: boolean
+      calendarEventId:
+        type: string
+      collectEmails:
+        type: boolean
+      creatorPosthogId:
+        description: PostHog ID for the event creator
+        type: string
+      dates:
+        type: string
+      daysOnly:
+        description: Whether to only poll for days, not times
+        type: boolean
+      description:
+        type: string
+      duration:
+        type: number
+      hasResponded:
+        description: Whether the user has responded to the availability group (fetched
+          based on whether user is in Attendees)
+        type: boolean
+      hasSpecificTimes:
+        description: Used for specific times for specific dates feature
+        type: boolean
+      isDeleted:
+        type: boolean
+      isSignUpForm:
+        description: Sign up form details
+        type: boolean
+      name:
+        type: string
+      notificationsEnabled:
+        type: boolean
+      numResponses:
+        description: Used to store the number of responses for the event
+        type: integer
+      ownerId:
+        type: string
+      remindees:
+        description: Remindees
+        items:
+          $ref: '#/definitions/models.Remindee'
+        type: array
+      responses:
+        additionalProperties:
+          $ref: '#/definitions/models.Response'
+        description: Availability responses - old format for backward compatibility
+          (fetched from eventResponses collection)
+        type: object
+      scheduledEvent:
+        $ref: '#/definitions/models.CalendarEvent'
+        description: Scheduled event
+        type: object
+      sendEmailAfterXResponses:
+        type: integer
+      shortId:
+        type: string
+      signUpBlocks:
+        items:
+          $ref: '#/definitions/models.SignUpBlock'
+        type: array
+      signUpResponses:
+        additionalProperties:
+          $ref: '#/definitions/models.SignUpResponse'
+        type: object
+      startOnMonday:
+        description: Whether to start the event on Monday (as opposed to Sunday, used
+          for DOW events)
+        type: boolean
+      timeIncrement:
+        type: integer
+      times:
+        type: string
+      type:
+        type: string
+      when2meetHref:
+        type: string
+    type: object
+  models.EventType:
+    type: string
+  models.Folder:
+    properties:
+      _id:
+        type: string
+      color:
+        type: string
+      eventIds:
+        items:
+          type: string
+        type: array
+      isDeleted:
+        type: boolean
+      name:
+        type: string
+      userId:
+        type: string
+    type: object
+  models.Location:
+    properties:
+      city:
+        type: string
+      country_code:
+        type: string
+      country_name:
+        type: string
+      latitude:
+        type: number
+      longitude:
+        type: number
+      postal:
+        type: string
+      state:
+        type: string
+    type: object
+  models.OAuth2CalendarAuth:
+    type: object
+  models.Remindee:
+    properties:
+      email:
+        type: string
+      responded:
+        type: boolean
+    type: object
+  models.Response:
+    properties:
+      availability:
+        description: Availability
+        type: string
+      calendarOptions:
+        $ref: '#/definitions/models.CalendarOptions'
+        type: object
+      email:
+        type: string
+      enabledCalendars:
+        additionalProperties:
+          items:
+            type: string
+          type: array
+        description: Maps email to an array of sub calendar ids
+        type: object
+      ifNeeded:
+        type: string
+      manualAvailability:
+        additionalProperties:
+          items:
+            $ref: '#/definitions/primitive.DateTime'
+          type: array
+        description: Mapping from the start date of a day to the available times for
+          that day
+        type: object
+      name:
+        description: Guest information
+        type: string
+      useCalendarAvailability:
+        description: Calendar availability variables for Availability Groups feature
+        type: boolean
+      user:
+        $ref: '#/definitions/models.User'
+        type: object
+      userId:
+        description: User information
+        type: string
+    type: object
+  models.SignUpBlock:
+    properties:
+      _id:
+        type: string
+      capacity:
+        type: integer
+      endDate:
+        type: string
+      name:
+        type: string
+      startDate:
+        type: string
+    type: object
+  models.SignUpResponse:
+    properties:
+      email:
+        type: string
+      name:
+        description: Guest information
+        type: string
+      signUpBlockIds:
+        description: The IDs of the sign up blocks that the user has signed up for
+        items:
+          type: string
+        type: array
+      user:
+        $ref: '#/definitions/models.User'
+        type: object
+      userId:
+        description: User information
+        type: string
+    type: object
+  models.SubCalendar:
+    properties:
+      enabled:
+        type: boolean
+      name:
+        type: string
+    type: object
+  models.User:
+    properties:
+      _id:
+        description: Profile info
+        type: string
+      calendarAccounts:
+        additionalProperties:
+          $ref: '#/definitions/models.CalendarAccount'
+        description: |-
+          CalendarAccounts is a mapping from {`email_CALENDARTYPE` => CalendarAccount} that contains all the
+          additional accounts the user wants to see google calendar events for
+        type: object
+      calendarOptions:
+        $ref: '#/definitions/models.CalendarOptions'
+        description: Calendar options
+        type: object
+      email:
+        type: string
+      firstName:
+        type: string
+      hasCustomName:
+        description: Whether the user has set a custom name for themselves, i.e. don't
+          change their name when they sign in
+        type: boolean
+      isPremium:
+        type: boolean
+      lastName:
+        type: string
+      numEventsCreated:
+        type: integer
+      picture:
+        type: string
+      primaryAccountKey:
+        description: The calendarAccountKey of the account the user first signed in
+          with
+        type: string
+      stripeCustomerId:
+        description: Stripe customer ID
+        type: string
+      timezoneOffset:
+        type: integer
+    type: object
+  models.WorkingHoursOptions:
+    properties:
+      enabled:
+        type: boolean
+      endTime:
+        type: number
+      startTime:
+        type: number
+    type: object
+  responses.Error:
+    properties:
+      error:
+        type: object
+    required:
+    - error
+    type: object
+  routes.CreateFolderResponse:
+    properties:
+      id:
+        type: string
+    type: object
+host: localhost:3002/api
+info:
+  contact: {}
+  description: This is the API for Schej.it!
+  license: {}
+  title: Schej.it API
+  version: "1.0"
+paths:
+  /analytics/downgrade-user:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Object containing the user email
+        in: body
+        name: payload
+        required: true
+        schema:
+          allOf:
+          - type: object
+          - properties:
+              email:
+                type: string
+            type: object
+      produces:
+      - application/json
+      responses:
+        "200": {}
+      summary: Downgrades the specified user to Schej Free
+      tags:
+      - analytics
+  /analytics/monthly-active-event-creators:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: Start date (YYYY-MM-DD) for the range
+        in: query
+        name: startDate
+        required: true
+        type: string
+      - description: End date (YYYY-MM-DD) for the range
+        in: query
+        name: endDate
+        required: true
+        type: string
+      - description: Client's timezone offset in minutes from UTC (e.g., -420 for
+          UTC-7)
+        in: query
+        name: timezoneOffset
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              allOf:
+              - type: object
+              - properties:
+                  count:
+                    type: integer
+                  date:
+                    type: string
+                type: object
+            type: array
+        "400":
+          description: Invalid date format, range, or timezone offset
+          schema:
+            allOf:
+            - type: object
+            - properties:
+                error:
+                  type: string
+              type: object
+        "500":
+          description: Internal server error
+          schema:
+            allOf:
+            - type: object
+            - properties:
+                error:
+                  type: string
+              type: object
+      summary: Gets the daily count of monthly active event creators over a date range
+      tags:
+      - analytics
+  /analytics/monthly-active-event-creators-with-more-than-x-events:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: Start date (YYYY-MM-DD) for the range
+        in: query
+        name: startDate
+        required: true
+        type: string
+      - description: End date (YYYY-MM-DD) for the range
+        in: query
+        name: endDate
+        required: true
+        type: string
+      - description: Client's timezone offset in minutes from UTC (e.g., -420 for
+          UTC-7)
+        in: query
+        name: timezoneOffset
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              allOf:
+              - type: object
+              - properties:
+                  count:
+                    type: integer
+                  date:
+                    type: string
+                type: object
+            type: array
+        "400":
+          description: Invalid date format, range, or timezone offset
+          schema:
+            allOf:
+            - type: object
+            - properties:
+                error:
+                  type: string
+              type: object
+        "500":
+          description: Internal server error
+          schema:
+            allOf:
+            - type: object
+            - properties:
+                error:
+                  type: string
+              type: object
+      summary: Gets the daily count of monthly active event creators over a date range
+        with more than x events
+      tags:
+      - analytics
+  /analytics/scanned-poster:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Object containing the location that poster was scanned from and
+          the url that was scanned
+        in: body
+        name: payload
+        required: true
+        schema:
+          allOf:
+          - type: object
+          - properties:
+              location:
+                $ref: '#/definitions/models.Location'
+              url:
+                type: string
+            type: object
+      produces:
+      - application/json
+      responses:
+        "200": {}
+      summary: Notifies us when poster QR code has been scanned
+      tags:
+      - analytics
+  /analytics/upgrade-dialog-viewed:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Object containing the user id
+        in: body
+        name: payload
+        required: true
+        schema:
+          allOf:
+          - type: object
+          - properties:
+              userId:
+                type: string
+            type: object
+      produces:
+      - application/json
+      responses:
+        "200": {}
+      summary: Notifies us when user has viewed the upgrade dialog
+      tags:
+      - analytics
+  /analytics/upgrade-user:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Object containing the user email
+        in: body
+        name: payload
+        required: true
+        schema:
+          allOf:
+          - type: object
+          - properties:
+              email:
+                type: string
+            type: object
+      produces:
+      - application/json
+      responses:
+        "200": {}
+      summary: Upgrades the specified user to Schej Premium
+      tags:
+      - analytics
+  /analytics/user/{email}:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: User email
+        in: path
+        name: email
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.User'
+      summary: Gets the user by email
+      tags:
+      - analytics
+  /auth/sign-in:
+    post:
+      consumes:
+      - application/json
+      description: Signs user in and sets the access token session variable
+      parameters:
+      - description: Object containing the Google authorization code, scope, calendar
+          type, and the user's timezone offset
+        in: body
+        name: payload
+        required: true
+        schema:
+          allOf:
+          - type: object
+          - properties:
+              calendarType:
+                type: string
+              code:
+                type: string
+              scope:
+                type: string
+              timezoneOffset:
+                type: integer
+            type: object
+      produces:
+      - application/json
+      responses:
+        "200": {}
+      summary: Signs user in
+      tags:
+      - auth
+  /auth/sign-in-mobile:
+    post:
+      consumes:
+      - application/json
+      description: Signs user in and sets the access token session variable
+      parameters:
+      - description: Object containing the Google authorization code, calendar type,
+          and the user's timezone offset
+        in: body
+        name: payload
+        required: true
+        schema:
+          allOf:
+          - type: object
+          - properties:
+              accessToken:
+                type: string
+              calendarType:
+                type: string
+              expiresIn:
+                type: integer
+              idToken:
+                type: string
+              refreshToken:
+                type: string
+              scope:
+                type: string
+              timezoneOffset:
+                type: integer
+              tokenOrigin:
+                type: string
+            type: object
+      produces:
+      - application/json
+      responses:
+        "200": {}
+      summary: Signs user in from mobile
+      tags:
+      - auth
+  /auth/sign-out:
+    post:
+      consumes:
+      - application/json
+      description: Signs user out and deletes the session
+      produces:
+      - application/json
+      responses:
+        "200": {}
+      summary: Signs user out
+      tags:
+      - auth
+  /auth/status:
+    get:
+      description: Returns a 401 error if user is not signed in, 200 if they are
+      responses:
+        "200": {}
+        "401":
+          description: Error object
+          schema:
+            $ref: '#/definitions/responses.Error'
+      summary: Gets whether the user is signed in or not
+      tags:
+      - auth
+  /events:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Object containing info about the event to create
+        in: body
+        name: payload
+        required: true
+        schema:
+          allOf:
+          - type: object
+          - properties:
+              attendees:
+                items:
+                  type: string
+                type: array
+              blindAvailabilityEnabled:
+                type: boolean
+              dates:
+                items:
+                  type: string
+                type: array
+              daysOnly:
+                type: boolean
+              duration:
+                type: number
+              isSignUpForm:
+                type: boolean
+              name:
+                type: string
+              notificationsEnabled:
+                type: boolean
+              remindees:
+                items:
+                  type: string
+                type: array
+              sendEmailAfterXResponses:
+                type: integer
+              signUpBlocks:
+                items:
+                  $ref: '#/definitions/models.SignUpBlock'
+                type: array
+              timeIncrement:
+                type: integer
+              type:
+                $ref: '#/definitions/models.EventType'
+              when2meetHref:
+                type: string
+            type: object
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - type: object
+            - properties:
+                eventId:
+                  type: string
+              type: object
+      summary: Creates a new event
+      tags:
+      - events
+  /events/{eventId}:
+    delete:
+      parameters:
+      - description: Event ID
+        in: path
+        name: eventId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200": {}
+      summary: Deletes an event based on its id
+      tags:
+      - events
+    get:
+      parameters:
+      - description: Event ID
+        in: path
+        name: eventId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Event'
+      summary: Gets an event based on its id
+      tags:
+      - events
+    put:
+      parameters:
+      - description: Event ID
+        in: path
+        name: eventId
+        required: true
+        type: string
+      - description: Object containing info about the event to update
+        in: body
+        name: payload
+        required: true
+        schema:
+          allOf:
+          - type: object
+          - properties:
+              attendees:
+                items:
+                  type: string
+                type: array
+              blindAvailabilityEnabled:
+                type: boolean
+              dates:
+                items:
+                  type: string
+                type: array
+              daysOnly:
+                type: boolean
+              description:
+                type: string
+              duration:
+                type: number
+              name:
+                type: string
+              notificationsEnabled:
+                type: boolean
+              remindees:
+                items:
+                  type: string
+                type: array
+              sendEmailAfterXResponses:
+                type: integer
+              signUpBlocks:
+                items:
+                  $ref: '#/definitions/models.SignUpBlock'
+                type: array
+              type:
+                $ref: '#/definitions/models.EventType'
+            type: object
+      produces:
+      - application/json
+      responses:
+        "200": {}
+      summary: Edits an event based on its id
+      tags:
+      - events
+  /events/{eventId}/calendar-availabilities:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: Event ID
+        in: path
+        name: eventId
+        required: true
+        type: string
+      - description: Lower bound for event's start time to filter by
+        in: query
+        name: timeMin
+        required: true
+        type: string
+      - description: Upper bound for event's end time to filter by
+        in: query
+        name: timeMax
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              additionalProperties:
+                $ref: '#/definitions/calendar.CalendarEventsWithError'
+              type: object
+            type: object
+      summary: Return a map mapping user id to their calendar events that they have
+        enabled for the given time range
+      tags:
+      - events
+  /events/{eventId}/decline:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Event ID
+        in: path
+        name: eventId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200": {}
+      summary: Decline the current user's invite to the event
+      tags:
+      - events
+  /events/{eventId}/duplicate:
+    post:
+      parameters:
+      - description: Event ID
+        in: path
+        name: eventId
+        required: true
+        type: string
+      - description: Object containing options for the duplicated event
+        in: body
+        name: payload
+        required: true
+        schema:
+          allOf:
+          - type: object
+          - properties:
+              copyAvailability:
+                type: boolean
+              eventName:
+                type: string
+            type: object
+      produces:
+      - application/json
+      responses:
+        "200": {}
+      summary: Duplicate event
+      tags:
+      - events
+  /events/{eventId}/rename-user:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Event ID
+        in: path
+        name: eventId
+        required: true
+        type: string
+      - description: Object containing info about the guest response to rename
+        in: body
+        name: payload
+        required: true
+        schema:
+          allOf:
+          - type: object
+          - properties:
+              newName:
+                type: string
+              oldName:
+                type: string
+            type: object
+      produces:
+      - application/json
+      responses:
+        "200": {}
+      summary: Rename a guest response
+      tags:
+      - events
+  /events/{eventId}/responded:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Event ID
+        in: path
+        name: eventId
+        required: true
+        type: string
+      - description: Object containing the user's email
+        in: body
+        name: payload
+        required: true
+        schema:
+          allOf:
+          - type: object
+          - properties:
+              email:
+                type: string
+            type: object
+      produces:
+      - application/json
+      responses:
+        "200": {}
+      summary: Mark the user as having responded to this event
+      tags:
+      - events
+  /events/{eventId}/response:
+    delete:
+      consumes:
+      - application/json
+      parameters:
+      - description: Event ID
+        in: path
+        name: eventId
+        required: true
+        type: string
+      - description: Object containing info about the event response to delete
+        in: body
+        name: payload
+        required: true
+        schema:
+          allOf:
+          - type: object
+          - properties:
+              guest:
+                type: boolean
+              name:
+                type: string
+              userId:
+                type: string
+            type: object
+      produces:
+      - application/json
+      responses:
+        "200": {}
+      summary: Delete the current user's availability
+      tags:
+      - events
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Event ID
+        in: path
+        name: eventId
+        required: true
+        type: string
+      - description: Object containing info about the event response to update
+        in: body
+        name: payload
+        required: true
+        schema:
+          allOf:
+          - type: object
+          - properties:
+              availability:
+                items:
+                  type: string
+                type: array
+              calendarOptions:
+                $ref: '#/definitions/models.CalendarOptions'
+              enabledCalendars:
+                additionalProperties:
+                  items:
+                    type: string
+                  type: array
+                type: object
+              guest:
+                type: boolean
+              ifNeeded:
+                items:
+                  type: string
+                type: array
+              manualAvailability:
+                additionalProperties:
+                  items:
+                    type: string
+                  type: array
+                type: object
+              name:
+                type: string
+              signUpBlockIds:
+                items:
+                  type: string
+                type: array
+              useCalendarAvailability:
+                type: boolean
+            type: object
+      produces:
+      - application/json
+      responses:
+        "200": {}
+      summary: Updates the current user's availability
+      tags:
+      - events
+  /events/{eventId}/responses:
+    get:
+      parameters:
+      - description: Event ID
+        in: path
+        name: eventId
+        required: true
+        type: string
+      - description: Lower bound for start time to filter availability by
+        in: query
+        name: timeMin
+        required: true
+        type: string
+      - description: Upper bound for end time to filter availability by
+        in: query
+        name: timeMax
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              $ref: '#/definitions/models.Response'
+            type: object
+      summary: Gets responses for an event, filtering availability to be within the
+        date ranges
+      tags:
+      - events
+  /slackbot:
+    post:
+      consumes:
+      - application/x-www-form-urlencoded
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Text response
+          schema:
+            $ref: '#/definitions/commands.Response'
+      summary: Gets the number of signed up users
+      tags:
+      - slackbot
+  /user:
+    delete:
+      produces:
+      - application/json
+      responses:
+        "200": {}
+      summary: Deletes the currently signed in user
+      tags:
+      - user
+  /user/add-apple-calendar-account:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Object containing the email and app password of the apple account
+        in: body
+        name: payload
+        required: true
+        schema:
+          allOf:
+          - type: object
+          - properties:
+              email:
+                type: string
+              password:
+                type: string
+            type: object
+      produces:
+      - application/json
+      responses:
+        "200": {}
+      summary: Adds an apple calendar account
+      tags:
+      - user
+  /user/add-google-calendar-account:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Object containing the Google authorization code and scope
+        in: body
+        name: payload
+        required: true
+        schema:
+          allOf:
+          - type: object
+          - properties:
+              code:
+                type: string
+              scope:
+                type: string
+            type: object
+      produces:
+      - application/json
+      responses:
+        "200": {}
+      summary: Adds a new calendar account
+      tags:
+      - user
+  /user/add-outlook-calendar-account:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Object containing the Outlook authorization code and scope
+        in: body
+        name: payload
+        required: true
+        schema:
+          allOf:
+          - type: object
+          - properties:
+              code:
+                type: string
+              scope:
+                type: string
+            type: object
+      produces:
+      - application/json
+      responses:
+        "200": {}
+      summary: Adds a new outlook calendar account
+      tags:
+      - user
+  /user/calendar-options:
+    patch:
+      consumes:
+      - application/json
+      parameters:
+      - description: Object containing the updated options
+        in: body
+        name: payload
+        required: true
+        schema:
+          allOf:
+          - type: object
+          - properties:
+              bufferTime:
+                $ref: '#/definitions/models.BufferTimeOptions'
+              workingHours:
+                $ref: '#/definitions/models.WorkingHoursOptions'
+            type: object
+      produces:
+      - application/json
+      responses:
+        "200": {}
+      summary: Updates the user's calendar options
+      tags:
+      - user
+  /user/calendars:
+    get:
+      description: Gets the user's calendar events between "timeMin" and "timeMax"
+      parameters:
+      - description: Lower bound for event's start time to filter by
+        in: query
+        name: timeMin
+        required: true
+        type: string
+      - description: Upper bound for event's end time to filter by
+        in: query
+        name: timeMax
+        required: true
+        type: string
+      - description: Comma separated list of accounts to fetch calendar events from
+        in: query
+        name: accounts
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              $ref: '#/definitions/calendar.CalendarEventsWithError'
+            type: object
+      summary: Gets the user's calendar events
+      tags:
+      - user
+  /user/events:
+    get:
+      description: Returns an array containing all the user's events
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.Event'
+            type: array
+      summary: Gets all the user's events
+      tags:
+      - user
+  /user/events/{eventId}/set-folder:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: The ID of the event to set the folder for
+        in: path
+        name: eventId
+        required: true
+        type: string
+      - description: The ID of the folder to set the event to
+        in: body
+        name: payload
+        required: true
+        schema:
+          allOf:
+          - type: object
+          - properties:
+              folderId:
+                type: string
+            type: object
+      produces:
+      - application/json
+      responses:
+        "200": {}
+      summary: Sets the folder for the specified event
+      tags:
+      - user
+  /user/folders:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: A list of all folders for the user
+          schema:
+            items:
+              $ref: '#/definitions/models.Folder'
+            type: array
+        "400":
+          description: Invalid user ID
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Failed to get folders
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get all folders
+      tags:
+      - folders
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Folder name and optional color
+        in: body
+        name: payload
+        required: true
+        schema:
+          allOf:
+          - type: object
+          - properties:
+              color:
+                type: string
+              name:
+                type: string
+            type: object
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: The ID of the created folder
+          schema:
+            $ref: '#/definitions/routes.CreateFolderResponse'
+        "400":
+          description: Invalid user ID or request body
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Failed to create folder
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Create a new folder
+      tags:
+      - folders
+  /user/folders/{folderId}:
+    delete:
+      parameters:
+      - description: Folder ID
+        in: path
+        name: folderId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200": {}
+        "400":
+          description: Invalid user ID or folder ID
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Failed to delete folder
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Delete a folder
+      tags:
+      - folders
+    get:
+      parameters:
+      - description: Folder ID
+        in: path
+        name: folderId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: The folder object with events
+          schema:
+            $ref: '#/definitions/models.Folder'
+        "400":
+          description: Invalid user ID or folder ID
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Folder not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Failed to get events in folder
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get a folder by its ID and its contents
+      tags:
+      - folders
+    patch:
+      consumes:
+      - application/json
+      parameters:
+      - description: Folder ID
+        in: path
+        name: folderId
+        required: true
+        type: string
+      - description: New folder name and/or color
+        in: body
+        name: payload
+        required: true
+        schema:
+          allOf:
+          - type: object
+          - properties:
+              color:
+                type: string
+              name:
+                type: string
+            type: object
+      produces:
+      - application/json
+      responses:
+        "200": {}
+        "400":
+          description: Invalid user ID or folder ID
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Failed to update folder
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Update a folder's name or color
+      tags:
+      - folders
+  /user/name:
+    patch:
+      consumes:
+      - application/json
+      parameters:
+      - description: Object containing the updated name
+        in: body
+        name: payload
+        required: true
+        schema:
+          allOf:
+          - type: object
+          - properties:
+              firstName:
+                type: string
+              lastName:
+                type: string
+            type: object
+      produces:
+      - application/json
+      responses:
+        "200": {}
+      summary: Updates the user's name
+      tags:
+      - user
+  /user/profile:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: A user profile object
+          schema:
+            $ref: '#/definitions/models.User'
+      summary: Gets the user's profile
+      tags:
+      - user
+  /user/remove-calendar-account:
+    delete:
+      consumes:
+      - application/json
+      parameters:
+      - description: Object containing the email + type of the calendar account to
+          remove
+        in: body
+        name: payload
+        required: true
+        schema:
+          allOf:
+          - type: object
+          - properties:
+              calendarType:
+                $ref: '#/definitions/models.CalendarType'
+              email:
+                type: string
+            type: object
+      produces:
+      - application/json
+      responses:
+        "200": {}
+      summary: Removes an existing calendar account
+      tags:
+      - user
+  /user/searchContacts:
+    get:
+      parameters:
+      - description: Query to search for
+        in: query
+        name: query
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.User'
+            type: array
+      summary: Searches the user's contacts based on the given query
+      tags:
+      - user
+  /user/toggle-calendar:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Email of calendar account and whether to enable it
+        in: body
+        name: payload
+        required: true
+        schema:
+          allOf:
+          - type: object
+          - properties:
+              calendarAccountKey:
+                type: string
+              enabled:
+                type: boolean
+            type: object
+      produces:
+      - application/json
+      responses:
+        "200": {}
+      summary: Toggles whether the specified calendar is enabled or disabled for the
+        user
+      tags:
+      - user
+  /user/toggle-sub-calendar:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Email of calendar account, the sub calendar id, and whether to
+          enable it
+        in: body
+        name: payload
+        required: true
+        schema:
+          allOf:
+          - type: object
+          - properties:
+              calendarAccountKey:
+                type: string
+              enabled:
+                type: boolean
+              subCalendarId:
+                type: string
+            type: object
+      produces:
+      - application/json
+      responses:
+        "200": {}
+      summary: Toggles whether the specified sub-calendar is enabled or disabled for
+        the user
+      tags:
+      - user
+  /users:
+    get:
+      parameters:
+      - description: Search query matching users' names/emails
+        in: query
+        name: query
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: An array of user profile objects
+          schema:
+            items:
+              $ref: '#/definitions/models.User'
+            type: array
+      summary: Returns users that match the search query
+      tags:
+      - users
+  /users/{userId}:
+    get:
+      parameters:
+      - description: User ID
+        in: path
+        name: userId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: A user profile object
+          schema:
+            $ref: '#/definitions/models.User'
+      summary: Returns the user by their user id
+      tags:
+      - users
+swagger: "2.0"

@@ -1,0 +1,40 @@
+server {
+    server_name schej.it; # managed by Certbot
+
+    # --- Service Worker Killer ---
+    # Intercept requests for the old service worker file.
+    # The browser will fetch this when it checks for an update.
+    # It will get our new "killer" script, which unregisters itself and reloads.
+    location = /service-worker.js { # <-- USE THE FILENAME YOU FOUND HERE
+        # Ensure this new SW is not cached by intermediaries
+        add_header Cache-Control "no-cache, no-store, must-revalidate";
+        add_header Pragma "no-cache";
+        add_header Expires "0";
+
+        # Serve the "killer" JS file from its location on the server.
+        # Make sure the path /schej.it/kill-sw.js is correct.
+        alias /schej.it/kill-sw.js;
+    }
+
+    location / {
+        return 301 https://timeful.app$request_uri;
+    }
+
+    listen 443 ssl; # managed by Certbot
+    ssl_certificate /etc/letsencrypt/live/schej.it/fullchain.pem; # managed by Certbot
+    ssl_certificate_key /etc/letsencrypt/live/schej.it/privkey.pem; # managed by Certbot
+    include /etc/letsencrypt/options-ssl-nginx.conf; # managed by Certbot
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem; # managed by Certbot
+}
+server {
+    if ($host = schej.it) {
+        return 301 https://$host$request_uri;
+    } # managed by Certbot
+
+
+    server_name schej.it;
+    listen 80;
+    return 404; # managed by Certbot
+
+
+}

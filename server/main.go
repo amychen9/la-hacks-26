@@ -1,0 +1,250 @@
+package main
+
+import (
+	"flag"
+	"fmt"
+	"io"
+	"io/fs"
+	"log"
+	"mime"
+	"net/http"
+	"os"
+	"path/filepath"
+	"regexp"
+	"strings"
+	"time"
+
+	"github.com/gin-contrib/cors"
+	"github.com/gin-contrib/sessions"
+	"github.com/gin-contrib/sessions/cookie"
+	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
+	"github.com/stripe/stripe-go/v82"
+	"schej.it/server/db"
+	"schej.it/server/logger"
+	"schej.it/server/routes"
+	"schej.it/server/services/gcloud"
+	"schej.it/server/slackbot"
+	"schej.it/server/utils"
+
+	swaggerfiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
+
+	_ "schej.it/server/docs"
+)
+
+// @title Schej.it API
+// @version 1.0
+// @description This is the API for Schej.it!
+
+// @host localhost:3002/api
+
+func init() {
+	mime.AddExtensionType(".css", "text/css")
+	mime.AddExtensionType(".js", "application/javascript")
+	mime.AddExtensionType(".svg", "image/svg+xml")
+	mime.AddExtensionType(".woff", "font/woff")
+	mime.AddExtensionType(".woff2", "font/woff2")
+	mime.AddExtensionType(".ttf", "font/ttf")
+	mime.AddExtensionType(".json", "application/json")
+	mime.AddExtensionType(".map", "application/json")
+}
+
+func main() {
+	// Set release flag
+	release := flag.Bool("release", false, "Whether this is the release version of the server")
+	flag.Parse()
+	if *release {
+		os.Setenv("GIN_MODE", "release")
+		gin.SetMode(gin.ReleaseMode)
+	} else {
+		os.Setenv("GIN_MODE", "debug")
+	}
+
+	// Init logfile
+	logFile, err := os.OpenFile("logs.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		log.Fatal(err)
+	}
+	gin.DefaultWriter = io.MultiWriter(logFile, os.Stdout)
+
+	// Init logger
+	logger.Init(logFile)
+
+	// Load .env variables
+	loadDotEnv()
+
+	// Init router
+	router := gin.New()
+	router.Use(gin.LoggerWithFormatter(func(param gin.LogFormatterParams) string {
+		var statusColor, methodColor, resetColor string
+		if param.IsOutputColor() {
+			statusColor = param.StatusCodeColor()
+			methodColor = param.MethodColor()
+			resetColor = param.ResetColor()
+		}
+
+		if param.Latency > time.Minute {
+			param.Latency = param.Latency.Truncate(time.Second)
+		}
+		return fmt.Sprintf("%v |%s %3d %s| %13v | %15s |%s %-7s %s %#v\n%s",
+			param.TimeStamp.Format("2006/01/02 15:04:05"),
+			statusColor, param.StatusCode, resetColor,
+			param.Latency,
+			param.ClientIP,
+			methodColor, param.Method, resetColor,
+			param.Path,
+			param.ErrorMessage,
+		)
+	}))
+	router.Use(gin.Recovery())
+
+	// Cors
+	corsOrigins := os.Getenv("CORS_ORIGINS")
+	if corsOrigins == "" {
+		corsOrigins = "https://www.schej.it,https://schej.it,https://www.timeful.app,https://timeful.app,http://localhost:8080"
+	}
+	router.Use(cors.New(cors.Config{
+		AllowOrigins:     strings.Split(corsOrigins, ","),
+		AllowMethods:     []string{"GET", "POST", "PATCH", "PUT", "DELETE"},
+		AllowHeaders:     []string{"Content-Type"},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: true,
+		MaxAge:           12 * time.Hour,
+	}))
+
+	// Init database
+	closeConnection := db.Init()
+	defer closeConnection()
+
+	// Init google cloud stuff
+	closeTasks := gcloud.InitTasks()
+	defer closeTasks()
+
+	// Session
+	store := cookie.NewStore([]byte(os.Getenv("SESSION_SECRET")))
+	router.Use(sessions.Sessions("session", store))
+
+	// Init routes
+	apiRouter := router.Group("/api")
+	routes.InitAuth(apiRouter)
+	routes.InitUser(apiRouter)
+	routes.InitUsers(apiRouter)
+	routes.InitEvents(apiRouter)
+	routes.InitAnalytics(apiRouter)
+	routes.InitStripe(apiRouter)
+	routes.InitFolders(apiRouter)
+	slackbot.InitSlackbot(apiRouter)
+
+	frontendDist := os.Getenv("FRONTEND_DIST")
+	if frontendDist == "" {
+		frontendDist = "./frontend/dist"
+		if _, err := os.Stat(frontendDist); os.IsNotExist(err) {
+			frontendDist = "../frontend/dist"
+		}
+	}
+
+	err = filepath.WalkDir(frontendDist, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if !d.IsDir() && d.Name() != "index.html" {
+			// Get the path relative to frontendDist
+			relPath, err := filepath.Rel(frontendDist, path)
+			if err != nil || relPath == "" || relPath == "." {
+				return nil
+			}
+			router.StaticFile(fmt.Sprintf("/%s", relPath), path)
+		}
+		return nil
+	})
+	if err != nil {
+		logger.StdErr.Printf("Warning: failed to walk frontend dist: %s", err)
+	}
+
+	indexPath := filepath.Join(frontendDist, "index.html")
+	if _, err := os.Stat(indexPath); err == nil {
+		router.LoadHTMLFiles(indexPath)
+	} else {
+		logger.StdErr.Printf("Warning: index.html not found at %s", indexPath)
+	}
+	router.NoRoute(noRouteHandler())
+
+	// Init swagger documentation
+	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
+
+	// Run server
+	if os.Getenv("NODE_ENV") == "staging" {
+		router.Run(":3003")
+	} else {
+		router.Run(":3002")
+	}
+}
+
+// Load .env variables
+func loadDotEnv() {
+	err := godotenv.Load(".env")
+	if err != nil {
+		// .env file is optional - env vars can be passed directly (e.g., via Docker)
+		logger.StdOut.Println("No .env file found, using environment variables")
+	}
+
+	// Load stripe key
+	stripe.Key = os.Getenv("STRIPE_API_KEY")
+
+	// Validate session secret
+	validateSessionSecret()
+}
+
+// validateSessionSecret ensures SESSION_SECRET is set and meets security requirements
+func validateSessionSecret() {
+	secret := os.Getenv("SESSION_SECRET")
+
+	if secret == "" {
+		logger.StdErr.Panicln("SESSION_SECRET environment variable is required but not set")
+	}
+
+	// Minimum 32 characters for adequate security (256 bits)
+	if len(secret) < 32 {
+		logger.StdErr.Panicln("SESSION_SECRET must be at least 32 characters long")
+	}
+}
+
+func noRouteHandler() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		params := gin.H{}
+		path := c.Request.URL.Path
+
+		// Determine meta tags based off URL
+		if match := regexp.MustCompile(`\/e\/(\w+)`).FindStringSubmatchIndex(path); match != nil {
+			// /e/:eventId
+			eventId := path[match[2]:match[3]]
+			event := db.GetEventByEitherId(eventId)
+
+			// params["enableStickyFooter"] = true
+
+			if event != nil {
+				title := fmt.Sprintf("%s - Timeful (formerly Schej)", event.Name)
+				params["title"] = title
+				params["ogTitle"] = title
+
+				if len(utils.Coalesce(event.When2meetHref)) > 0 {
+					params["ogImage"] = "/img/when2meetOgImage2.png"
+				}
+			}
+		} else if regexp.MustCompile(`\/g\/`).MatchString(path) {
+			// /g/ routes
+			// params["enableStickyFooter"] = true
+		}
+
+		c.HTML(http.StatusOK, "index.html", params)
+	}
+}
+
+func splitPath(path string) []string {
+	dir, last := filepath.Split(path)
+	if dir == "" {
+		return []string{last}
+	}
+	return append(splitPath(filepath.Clean(dir)), last)
+}
