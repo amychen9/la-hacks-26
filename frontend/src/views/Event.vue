@@ -296,8 +296,61 @@
               </div>
               <div class="tw-rounded tw-border tw-border-light-gray-stroke tw-bg-white tw-p-3">
                 <div class="tw-text-xs tw-font-medium tw-text-black">Recommended meeting choice</div>
-                <div class="tw-text-xs tw-text-very-dark-gray">
-                  Recommendation panel can plug into Fetch.ai next.
+                <div class="tw-mt-2 tw-space-y-2">
+                  <div class="tw-flex tw-flex-wrap tw-gap-2">
+                    <v-btn
+                      x-small
+                      outlined
+                      class="tw-text-green"
+                      @click="useCurrentLocationForFetch"
+                    >
+                      Use my location
+                    </v-btn>
+                    <v-btn
+                      x-small
+                      color="primary"
+                      :loading="fetchAgentLoading"
+                      @click="runFetchAgentForEvent"
+                    >
+                      Run Fetch.ai recommendation
+                    </v-btn>
+                  </div>
+                  <div
+                    v-if="fetchCurrentLocation"
+                    class="tw-text-[11px] tw-text-very-dark-gray"
+                  >
+                    Using location:
+                    {{ fetchCurrentLocation.latitude.toFixed(4) }},
+                    {{ fetchCurrentLocation.longitude.toFixed(4) }}
+                  </div>
+                  <div
+                    v-if="fetchAgentError"
+                    class="tw-text-[11px] tw-text-red"
+                  >
+                    {{ fetchAgentError }}
+                  </div>
+                  <div
+                    v-if="fetchAgentResult"
+                    class="tw-text-[11px] tw-text-very-dark-gray tw-space-y-1"
+                  >
+                    <div class="tw-font-medium tw-text-black">
+                      {{ fetchAgentResult.reply }}
+                    </div>
+                    <div>
+                      {{
+                        fetchAgentResult.recommendation?.logisticsSuggestion
+                          ?.suggestion
+                      }}
+                    </div>
+                    <div
+                      v-for="(place, idx) in fetchAgentResult.recommendation
+                        ?.logisticsSuggestion?.nearbyPlaces || []"
+                      :key="`fetch-place-${idx}`"
+                    >
+                      • {{ place.name }} ({{ place.category }}) -
+                      {{ place.distanceKm }} km
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -520,6 +573,7 @@ import {
   sendPluginSuccess,
   isValidPluginMessage,
   getCurrentTimezone,
+  getCurrentBrowserLocation,
   convertToUTC,
   isTimeWithinEventRange,
   convertUTCSlotsToLocalISO,
@@ -619,6 +673,13 @@ export default {
 
     // Sign Up Forms
     currSignUpBlock: null,
+
+    // Fetch.ai recommendation
+    fetchAgentLoading: false,
+    fetchAgentError: "",
+    fetchAgentResult: null,
+    fetchCurrentLocation: null,
+    fetchMeetingType: "study",
   }),
 
   beforeMount() {},
@@ -757,6 +818,59 @@ export default {
           ],
         })
       })
+    },
+
+    async useCurrentLocationForFetch() {
+      this.fetchAgentError = ""
+      const allowLocation = window.confirm(
+        "Allow CircleUp to access your current location for nearby place recommendations?"
+      )
+      if (!allowLocation) {
+        this.fetchAgentError = "Location request cancelled."
+        return
+      }
+      try {
+        const loc = await getCurrentBrowserLocation()
+        this.fetchCurrentLocation = {
+          latitude: loc.latitude,
+          longitude: loc.longitude,
+        }
+      } catch (err) {
+        this.fetchAgentError =
+          err?.message || "Could not access browser location."
+      }
+    },
+
+    async runFetchAgentForEvent() {
+      if (!this.event?._id) return
+      this.fetchAgentLoading = true
+      this.fetchAgentError = ""
+      this.fetchAgentResult = null
+
+      try {
+        const payload = {
+          message: "Find the best meeting slot and nearest place.",
+          context: {
+            sessionId: this.event._id,
+            meetingType: this.fetchMeetingType,
+            locationHint: "near this event",
+            durationMinutes: 60,
+            timezone:
+              getCurrentTimezone()?.value ||
+              Intl.DateTimeFormat().resolvedOptions().timeZone ||
+              "UTC",
+            currentLocation: this.fetchCurrentLocation,
+          },
+        }
+        this.fetchAgentResult = await post("/fetch/chat", payload)
+      } catch (err) {
+        this.fetchAgentError =
+          err?.parsed?.message ||
+          err?.message ||
+          "Failed to run fetch recommendation."
+      } finally {
+        this.fetchAgentLoading = false
+      }
     },
 
     /** Show choice dialog if not signed in, otherwise, immediately start editing availability */

@@ -1,8 +1,12 @@
 package routes
 
 import (
+	"encoding/json"
+	"fmt"
+	"io"
 	"math"
 	"net/http"
+	"net/url"
 	"sort"
 	"strings"
 	"time"
@@ -26,7 +30,13 @@ type recommendRequest struct {
 	LocationHint    string             `json:"locationHint"`
 	DurationMinutes int                `json:"durationMinutes"`
 	Timezone        string             `json:"timezone"`
+	CurrentLocation currentLocationInput `json:"currentLocation"`
 	Participants    []participantInput `json:"participants"`
+}
+
+type currentLocationInput struct {
+	Latitude  float64 `json:"latitude"`
+	Longitude float64 `json:"longitude"`
 }
 
 type chatRequest struct {
@@ -37,6 +47,7 @@ type chatRequest struct {
 		LocationHint    string `json:"locationHint"`
 		DurationMinutes int    `json:"durationMinutes"`
 		Timezone        string `json:"timezone"`
+		CurrentLocation currentLocationInput `json:"currentLocation"`
 	} `json:"context"`
 }
 
@@ -52,6 +63,16 @@ type logisticsSuggestion struct {
 	MeetingMode string `json:"meetingMode"`
 	Suggestion  string `json:"suggestion"`
 	Backup      string `json:"backup"`
+	NearbyPlaces []nearbyPlace `json:"nearbyPlaces,omitempty"`
+}
+
+type nearbyPlace struct {
+	Name         string  `json:"name"`
+	Address      string  `json:"address"`
+	Category     string  `json:"category"`
+	Latitude     float64 `json:"latitude"`
+	Longitude    float64 `json:"longitude"`
+	DistanceKm   float64 `json:"distanceKm"`
 }
 
 type recommendResponse struct {
@@ -104,6 +125,7 @@ func chat(c *gin.Context) {
 		LocationHint:    payload.Context.LocationHint,
 		DurationMinutes: payload.Context.DurationMinutes,
 		Timezone:        payload.Context.Timezone,
+		CurrentLocation: payload.Context.CurrentLocation,
 	}
 	resp, err := buildRecommendation(req)
 	if err != nil {
@@ -147,7 +169,7 @@ func buildRecommendation(payload recommendRequest) (*recommendResponse, error) {
 	}
 
 	candidates, trace := runAvailabilityAgent(participants, steps, timeIncrement)
-	ranked := runConsensusAgent(candidates, timeIncrement)
+	ranked := runConsensusAgent(candidates, timeIncrement, steps)
 	if len(ranked) == 0 {
 		return &recommendResponse{
 			BestSlot:    nil,
@@ -162,7 +184,7 @@ func buildRecommendation(payload recommendRequest) (*recommendResponse, error) {
 		}, nil
 	}
 
-	logistics := runLogisticsAgent(payload.MeetingType, payload.LocationHint)
+	logistics := runLogisticsAgent(payload.MeetingType, payload.LocationHint, payload.CurrentLocation)
 	best := ranked[0]
 	reasoning := []string{
 		"Highest overlap across participants",
@@ -298,7 +320,7 @@ func runAvailabilityAgent(participants []participantAvail, steps int, incrementM
 	return candidates, trace
 }
 
-func runConsensusAgent(candidates []candidateSlot, incrementMinutes int) []rankedSlot {
+func runConsensusAgent(candidates []candidateSlot, incrementMinutes int, steps int) []rankedSlot {
 	sort.Slice(candidates, func(i, j int) bool {
 		if candidates[i].Score != candidates[j].Score {
 			return candidates[i].Score > candidates[j].Score
@@ -319,7 +341,7 @@ func runConsensusAgent(candidates []candidateSlot, incrementMinutes int) []ranke
 	out := make([]rankedSlot, 0, max)
 	for i := 0; i < max; i++ {
 		start := time.UnixMilli(candidates[i].StartMS).UTC()
-		end := start.Add(time.Duration(incrementMinutes) * time.Minute)
+		end := start.Add(time.Duration(incrementMinutes*steps) * time.Minute)
 		out = append(out, rankedSlot{
 			StartISO:       start.Format(time.RFC3339),
 			EndISO:         end.Format(time.RFC3339),
@@ -331,31 +353,165 @@ func runConsensusAgent(candidates []candidateSlot, incrementMinutes int) []ranke
 	return out
 }
 
-func runLogisticsAgent(meetingType string, locationHint string) logisticsSuggestion {
+func runLogisticsAgent(meetingType string, locationHint string, currentLocation currentLocationInput) logisticsSuggestion {
 	place := strings.TrimSpace(locationHint)
 	if place == "" {
 		place = "your area"
 	}
+
+	nearbyCategory := "library"
+	if strings.EqualFold(strings.TrimSpace(meetingType), "social") {
+		nearbyCategory = "cafe"
+	}
+	nearbyPlaces := lookupNearbyPlaces(currentLocation, nearbyCategory)
+
 	switch strings.ToLower(strings.TrimSpace(meetingType)) {
 	case "work":
 		return logisticsSuggestion{
 			MeetingMode: "virtual",
 			Suggestion:  "Create a Google Meet link and include agenda notes.",
 			Backup:      "Book a quiet coworking table near " + place + ".",
+			NearbyPlaces: nearbyPlaces,
 		}
 	case "social":
 		return logisticsSuggestion{
 			MeetingMode: "in_person",
 			Suggestion:  "Pick a casual cafe or food spot near " + place + ".",
 			Backup:      "If travel is hard, switch to a quick video call.",
+			NearbyPlaces: nearbyPlaces,
 		}
 	default:
 		return logisticsSuggestion{
 			MeetingMode: "in_person",
 			Suggestion:  "Reserve a library study room near " + place + ".",
 			Backup:      "Use a virtual room if anyone cannot make it in-person.",
+			NearbyPlaces: nearbyPlaces,
 		}
 	}
+}
+
+func lookupNearbyPlaces(currentLocation currentLocationInput, category string) []nearbyPlace {
+	if currentLocation.Latitude == 0 && currentLocation.Longitude == 0 {
+		return []nearbyPlace{}
+	}
+
+	amenity := "library"
+	if strings.EqualFold(category, "cafe") {
+		amenity = "cafe"
+	}
+
+	overpassQuery := fmt.Sprintf(`[out:json][timeout:8];
+(
+  node["amenity"="%s"](around:5000,%.6f,%.6f);
+  way["amenity"="%s"](around:5000,%.6f,%.6f);
+  relation["amenity"="%s"](around:5000,%.6f,%.6f);
+);
+out center tags;`, amenity, currentLocation.Latitude, currentLocation.Longitude, amenity, currentLocation.Latitude, currentLocation.Longitude, amenity, currentLocation.Latitude, currentLocation.Longitude)
+
+	params := url.Values{}
+	params.Set("data", overpassQuery)
+	req, err := http.NewRequest(http.MethodGet, "https://overpass-api.de/api/interpreter?"+params.Encode(), nil)
+	if err != nil {
+		return []nearbyPlace{}
+	}
+	req.Header.Set("User-Agent", "circleup-agent/1.0")
+
+	client := &http.Client{Timeout: 4 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return []nearbyPlace{}
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return []nearbyPlace{}
+	}
+
+	rawBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return []nearbyPlace{}
+	}
+
+	parsed := overpassResponse{}
+	if err := json.Unmarshal(rawBody, &parsed); err != nil {
+		return []nearbyPlace{}
+	}
+
+	out := make([]nearbyPlace, 0, 3)
+	for _, r := range parsed.Elements {
+		lat, lon, ok := extractOverpassPoint(r)
+		if !ok {
+			continue
+		}
+		name := strings.TrimSpace(r.Tags["name"])
+		if name == "" {
+			if amenity == "cafe" {
+				name = "Cafe"
+			} else {
+				name = "Library"
+			}
+		}
+		address := strings.TrimSpace(r.Tags["addr:full"])
+		if address == "" {
+			street := strings.TrimSpace(r.Tags["addr:street"])
+			city := strings.TrimSpace(r.Tags["addr:city"])
+			if street != "" || city != "" {
+				address = strings.TrimSpace(street + ", " + city)
+			}
+		}
+		if address == "" {
+			address = name
+		}
+		out = append(out, nearbyPlace{
+			Name:       name,
+			Address:    address,
+			Category:   amenity,
+			Latitude:   lat,
+			Longitude:  lon,
+			DistanceKm: round2(haversineKm(currentLocation.Latitude, currentLocation.Longitude, lat, lon)),
+		})
+		if len(out) == 3 {
+			break
+		}
+	}
+	return out
+}
+
+type overpassResponse struct {
+	Elements []overpassElement `json:"elements"`
+}
+
+type overpassElement struct {
+	Lat    float64           `json:"lat"`
+	Lon    float64           `json:"lon"`
+	Center *overpassCenter   `json:"center"`
+	Tags   map[string]string `json:"tags"`
+}
+
+type overpassCenter struct {
+	Lat float64 `json:"lat"`
+	Lon float64 `json:"lon"`
+}
+
+func extractOverpassPoint(e overpassElement) (float64, float64, bool) {
+	if e.Lat != 0 || e.Lon != 0 {
+		return e.Lat, e.Lon, true
+	}
+	if e.Center != nil {
+		return e.Center.Lat, e.Center.Lon, true
+	}
+	return 0, 0, false
+}
+
+func haversineKm(lat1, lon1, lat2, lon2 float64) float64 {
+	const earthRadiusKm = 6371.0
+	dLat := (lat2 - lat1) * math.Pi / 180
+	dLon := (lon2 - lon1) * math.Pi / 180
+	a := math.Sin(dLat/2)*math.Sin(dLat/2) +
+		math.Cos(lat1*math.Pi/180)*math.Cos(lat2*math.Pi/180)*
+			math.Sin(dLon/2)*math.Sin(dLon/2)
+	c := 2 * math.Atan2(math.Sqrt(a), math.Sqrt(1-a))
+	return earthRadiusKm * c
 }
 
 func round2(v float64) float64 {

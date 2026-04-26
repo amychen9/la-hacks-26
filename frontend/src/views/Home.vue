@@ -55,6 +55,12 @@
           >
             Import Timeful Event
           </div>
+          <router-link
+            :to="{ name: 'fetch-demo' }"
+            class="tw-text-sm tw-font-normal tw-text-dark-gray tw-underline"
+          >
+            Open Fetch.ai Demo
+          </router-link>
         </div>
       </div>
 

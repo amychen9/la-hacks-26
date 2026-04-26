@@ -83,6 +83,11 @@ const routes = [
     component: () => import("@/views/Test.vue"),
   },
   {
+    path: "/fetch-demo",
+    name: "fetch-demo",
+    component: () => import("@/views/FetchDemo.vue"),
+  },
+  {
     path: "*",
     name: "404",
     component: () => import("@/views/PageNotFound.vue"),

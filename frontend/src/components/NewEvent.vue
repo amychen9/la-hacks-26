@@ -924,7 +924,14 @@ export default {
         // Create new event on backend
         post("/events", payload)
           .then(async ({ eventId, shortId }) => {
-            await this.submitParsedAvailability(eventId)
+            try {
+              await this.submitParsedAvailability(eventId)
+            } catch (err) {
+              console.error("Failed to submit parsed availability:", err)
+              this.showError(
+                "Event created, but screenshot availability could not be auto-applied. You can still add availability manually."
+              )
+            }
             if (this.authUser) {
               await this.setEventFolder({ eventId, folderId: this.folderId })
             }

@@ -133,6 +133,7 @@ func main() {
 	routes.InitEvents(apiRouter)
 	routes.InitScreenshot(apiRouter)
 	routes.InitAgent(apiRouter)
+	routes.InitFetchAI(apiRouter)
 	routes.InitAnalytics(apiRouter)
 	routes.InitStripe(apiRouter)
 	routes.InitFolders(apiRouter)
