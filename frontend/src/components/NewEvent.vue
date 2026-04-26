@@ -59,7 +59,8 @@
           required
         />
 
-        <ScreenshotUpload /> <!-- amy: make upload feature appear and work visually  -->
+        <ScreenshotUpload @uploaded="handleScreenshotUploaded" /> 
+        <!-- amy: make upload feature appear and work visually; When ScreenshotUpload emits uploaded, run handleScreenshotUploaded -->
 
         <SlideToggle
           v-if="daysOnlyEnabled && !edit"
@@ -516,6 +517,7 @@ export default {
   },
 
   data: () => ({
+    screenshotURL: null,
     formValid: true,
     name: "",
     startTime: 9,
@@ -635,6 +637,10 @@ export default {
 
   methods: {
     ...mapActions(["showError", "setEventFolder"]),
+    handleScreenshotUploaded(imageURL) {
+      this.screenshotUrl = imageURL
+      console.log("Uploaded image url:", imageURL)
+    },
     blurNameField() {
       this.$refs["name-field"].blur()
     },
@@ -721,6 +727,7 @@ export default {
       this.loading = true
 
       const payload = {
+        screenshotUrl: this.uploadedScreenshotUrl,
         name: this.name,
         duration: duration,
         dates: dates,

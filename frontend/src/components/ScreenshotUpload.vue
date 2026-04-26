@@ -1,7 +1,7 @@
 <template>
   <div>
     <v-btn type="button" color="primary" @click.prevent="openWidget">
-  Upload Screenshot
+      Upload Screenshot
     </v-btn>
 
     <div v-if="imageUrl">
@@ -13,6 +13,7 @@
 
 <script>
 export default {
+  
   name: "ScreenshotUpload",
 
   data() {
@@ -35,7 +36,8 @@ export default {
       (error, result) => {
         if (!error && result.event === "success") {
           this.imageUrl = result.info.secure_url;
-          console.log("Cloudinary URL:", this.imageUrl);
+          console.log("Cloudinary URL:", this.imageUrl); // amy: delete later after we verify cloudinary upload worked, if you got the url correctly, the emitted value matches the URL
+          this.$emit("uploaded", this.imageUrl);
         }
       }
     );
