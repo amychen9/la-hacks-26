@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/stripe/stripe-go/v82"
@@ -133,46 +134,76 @@ func getPrice(c *gin.Context) {
 		lifetimePriceId = os.Getenv("STRIPE_LIFETIME_PRICE_ID")
 	}
 
+	// Gracefully degrade when Stripe env vars are not configured.
+	// This keeps event creation and scheduling flows usable for demos.
+	missingPriceIDs := []string{}
+	if strings.TrimSpace(monthlyPriceId) == "" {
+		missingPriceIDs = append(missingPriceIDs, "STRIPE_MONTHLY_PRICE_ID")
+	}
+	if strings.TrimSpace(lifetimePriceId) == "" {
+		missingPriceIDs = append(missingPriceIDs, "STRIPE_LIFETIME_PRICE_ID")
+	}
+	if strings.TrimSpace(monthlyStudentPriceId) == "" {
+		missingPriceIDs = append(missingPriceIDs, "STRIPE_MONTHLY_STUDENT_PRICE_ID")
+	}
+	if strings.TrimSpace(lifetimeStudentPriceId) == "" {
+		missingPriceIDs = append(missingPriceIDs, "STRIPE_LIFETIME_STUDENT_PRICE_ID")
+	}
+	if strings.TrimSpace(yearlyPriceId) == "" {
+		missingPriceIDs = append(missingPriceIDs, "STRIPE_YEARLY_PRICE_ID")
+	}
+	if strings.TrimSpace(yearlyStudentPriceId) == "" {
+		missingPriceIDs = append(missingPriceIDs, "STRIPE_YEARLY_STUDENT_PRICE_ID")
+	}
+	if len(missingPriceIDs) > 0 {
+		c.JSON(http.StatusOK, gin.H{
+			"disabled":       true,
+			"reason":         "stripe_price_ids_not_configured",
+			"missingPriceIDs": missingPriceIDs,
+		})
+		return
+	}
+
 	params := &stripe.PriceParams{}
 	monthlyResult, err := price.Get(monthlyPriceId, params)
 	if err != nil {
-		log.Printf("price.Get error: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch price"})
+		log.Printf("price.Get monthly error: %v", err)
+		c.JSON(http.StatusOK, gin.H{"disabled": true, "reason": "stripe_unavailable"})
 		return
 	}
 
 	lifetimeResult, err := price.Get(lifetimePriceId, params)
 	if err != nil {
-		log.Printf("price.Get error: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch price"})
+		log.Printf("price.Get lifetime error: %v", err)
+		c.JSON(http.StatusOK, gin.H{"disabled": true, "reason": "stripe_unavailable"})
 		return
 	}
 
 	monthlyStudentResult, err := price.Get(monthlyStudentPriceId, params)
 	if err != nil {
-		log.Printf("price.Get error: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch price"})
+		log.Printf("price.Get monthly student error: %v", err)
+		c.JSON(http.StatusOK, gin.H{"disabled": true, "reason": "stripe_unavailable"})
 		return
 	}
 
 	lifetimeStudentResult, err := price.Get(lifetimeStudentPriceId, params)
 	if err != nil {
-		log.Printf("price.Get error: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch price"})
+		log.Printf("price.Get lifetime student error: %v", err)
+		c.JSON(http.StatusOK, gin.H{"disabled": true, "reason": "stripe_unavailable"})
 		return
 	}
 
 	yearlyResult, err := price.Get(yearlyPriceId, params)
 	if err != nil {
-		log.Printf("price.Get error: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch price"})
+		log.Printf("price.Get yearly error: %v", err)
+		c.JSON(http.StatusOK, gin.H{"disabled": true, "reason": "stripe_unavailable"})
 		return
 	}
 
 	yearlyStudentResult, err := price.Get(yearlyStudentPriceId, params)
 	if err != nil {
-		log.Printf("price.Get error: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch price"})
+		log.Printf("price.Get yearly student error: %v", err)
+		c.JSON(http.StatusOK, gin.H{"disabled": true, "reason": "stripe_unavailable"})
 		return
 	}
 
