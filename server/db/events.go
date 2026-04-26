@@ -38,7 +38,11 @@ func GetEventById(eventId string) *models.Event {
 	// Decode result
 	var event models.Event
 	if err := result.Decode(&event); err != nil {
-		logger.StdErr.Panicln(err)
+		if err == mongo.ErrNoDocuments {
+			return nil
+		}
+		logger.StdErr.Println("GetEventById decode error:", err)
+		return nil
 	}
 
 	return &event
@@ -65,7 +69,11 @@ func GetEventByShortId(shortEventId string) *models.Event {
 	// Decode result
 	var event models.Event
 	if err := result.Decode(&event); err != nil {
-		logger.StdErr.Panicln(err)
+		if err == mongo.ErrNoDocuments {
+			return nil
+		}
+		logger.StdErr.Println("GetEventByShortId decode error:", err)
+		return nil
 	}
 
 	return &event
@@ -91,7 +99,8 @@ func GetEventResponses(eventId string) []models.EventResponse {
 		"eventId": objectId,
 	})
 	if err != nil {
-		logger.StdErr.Panicln(err)
+		logger.StdErr.Println("GetEventResponses find error:", err)
+		return []models.EventResponse{}
 	}
 	if result.Err() == mongo.ErrNoDocuments {
 		// Event responses do not exist!
@@ -100,7 +109,8 @@ func GetEventResponses(eventId string) []models.EventResponse {
 
 	var eventResponses []models.EventResponse
 	if err := result.All(context.Background(), &eventResponses); err != nil {
-		logger.StdErr.Panicln(err)
+		logger.StdErr.Println("GetEventResponses decode error:", err)
+		return []models.EventResponse{}
 	}
 
 	return eventResponses
