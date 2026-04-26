@@ -166,12 +166,14 @@ func main() {
 	}
 
 	indexPath := filepath.Join(frontendDist, "index.html")
+	hasFrontendIndex := false
 	if _, err := os.Stat(indexPath); err == nil {
 		router.LoadHTMLFiles(indexPath)
+		hasFrontendIndex = true
 	} else {
 		logger.StdErr.Printf("Warning: index.html not found at %s", indexPath)
 	}
-	router.NoRoute(noRouteHandler())
+	router.NoRoute(noRouteHandler(hasFrontendIndex))
 
 	// Init swagger documentation
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
@@ -213,8 +215,21 @@ func validateSessionSecret() {
 	}
 }
 
-func noRouteHandler() gin.HandlerFunc {
+func noRouteHandler(hasFrontendIndex bool) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		if strings.HasPrefix(c.Request.URL.Path, "/api/") {
+			c.JSON(http.StatusNotFound, gin.H{
+				"error":   "not_found",
+				"message": "API route not found",
+			})
+			return
+		}
+
+		if !hasFrontendIndex {
+			c.String(http.StatusOK, "CircleUp API server is running.")
+			return
+		}
+
 		params := gin.H{}
 		path := c.Request.URL.Path
 
