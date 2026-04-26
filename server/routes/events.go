@@ -222,7 +222,12 @@ func createEvent(c *gin.Context) {
 	// Insert event
 	result, err := db.EventsCollection.InsertOne(context.Background(), event)
 	if err != nil {
-		logger.StdErr.Panicln(err)
+		logger.StdErr.Println("createEvent insert error:", err)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "create_event_failed",
+			"message": "Database write failed while creating event.",
+		})
+		return
 	}
 	insertedId := result.InsertedID.(primitive.ObjectID).Hex()
 
