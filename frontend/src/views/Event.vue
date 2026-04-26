@@ -133,6 +133,12 @@
                     {{ event.name }}
                   </div>
                   <v-chip
+                    :small="isPhone"
+                    class="tw-cursor-default tw-select-none tw-rounded tw-bg-light-gray tw-px-2 tw-font-medium sm:tw-px-3"
+                  >
+                    Shared Session
+                  </v-chip>
+                  <v-chip
                     v-if="event.when2meetHref?.length > 0"
                     :href="`https://when2meet.com${event.when2meetHref}`"
                     :small="isPhone"
@@ -274,6 +280,27 @@
               :event.sync="event"
               :canEdit="event.ownerId != 0 && canEdit"
             />
+
+            <div class="tw-mt-4 tw-grid tw-grid-cols-1 tw-gap-3 sm:tw-grid-cols-3">
+              <div class="tw-rounded tw-border tw-border-light-gray-stroke tw-bg-white tw-p-3">
+                <div class="tw-text-xs tw-font-medium tw-text-black">Participant list</div>
+                <div class="tw-text-xs tw-text-very-dark-gray">
+                  {{ numResponses || 0 }} response(s) currently in this session.
+                </div>
+              </div>
+              <div class="tw-rounded tw-border tw-border-light-gray-stroke tw-bg-white tw-p-3">
+                <div class="tw-text-xs tw-font-medium tw-text-black">Shared free times</div>
+                <div class="tw-text-xs tw-text-very-dark-gray">
+                  Review overlap grid below for best matching windows.
+                </div>
+              </div>
+              <div class="tw-rounded tw-border tw-border-light-gray-stroke tw-bg-white tw-p-3">
+                <div class="tw-text-xs tw-font-medium tw-text-black">Recommended meeting choice</div>
+                <div class="tw-text-xs tw-text-very-dark-gray">
+                  Recommendation panel can plug into Fetch.ai next.
+                </div>
+              </div>
+            </div>
           </div>
 
           <!-- Calendar -->
@@ -1922,7 +1949,7 @@ export default {
         this.$nextTick(() => {
           this.scheduleOverlapComponent = this.$refs.scheduleOverlap
         })
-        document.title = `${this.event.name} - Timeful`
+        document.title = `${this.event.name} - CircleUp`
       }
     },
     ownerPremiumChecked(val) {

@@ -23,7 +23,7 @@
     <UpvoteRedditSnackbar />
     <div
       v-if="showHeader"
-      class="tw-fixed tw-z-40 tw-h-14 tw-w-screen tw-bg-white sm:tw-h-16"
+      class="tw-fixed tw-z-40 tw-h-14 tw-w-screen tw-bg-off-white sm:tw-h-16"
       dark
     >
       <div
@@ -49,7 +49,7 @@
           text
           @click="() => _createNew(true)"
         >
-          Create an event
+          Start Shared Session
         </v-btn>
         <v-btn
           v-if="showFeedbackBtn"
@@ -78,7 +78,7 @@
           }"
           @click="() => _createNew()"
         >
-          + Create new
+          + Upload Calendar
         </v-btn>
         <div v-if="authUser" class="sm:tw-ml-4">
           <AuthUserMenu />
@@ -109,6 +109,11 @@ html {
   overflow-y: auto !important;
   /* overscroll-behavior: none; */
   scroll-behavior: smooth;
+  background-color: theme("colors.off-white");
+}
+
+body {
+  background-color: theme("colors.off-white");
 }
 
 * {

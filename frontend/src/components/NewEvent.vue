@@ -59,6 +59,35 @@
           required
         />
 
+        <ScreenshotUpload
+          v-if="!edit"
+          :timezone="timezone.value"
+          @parsed="onScreenshotParsed"
+          @apply="onScreenshotApply"
+          @error="showError"
+        />
+        <div
+          v-if="appliedScreenshotSlots.length > 0"
+          class="tw-rounded-md tw-border tw-border-green/40 tw-bg-[#f0fff4] tw-p-3"
+        >
+          <div class="tw-mb-1 tw-text-sm tw-font-medium tw-text-black">
+            Applied slots
+          </div>
+          <div class="tw-text-xs tw-text-dark-gray">
+            {{ appliedScreenshotSlots.length }} slot(s) applied to this event
+            window.
+          </div>
+          <div class="tw-mt-2 tw-space-y-1">
+            <div
+              v-for="(slot, idx) in appliedScreenshotSlots"
+              :key="`applied-slot-${idx}`"
+              class="tw-rounded tw-bg-white tw-p-2 tw-text-xs"
+            >
+              {{ slot.startIso }} - {{ slot.endIso }}
+            </div>
+          </div>
+        </div>
+
         <SlideToggle
           v-if="daysOnlyEnabled && !edit"
           class="tw-w-full"
@@ -474,6 +503,7 @@ import TimezoneSelector from "./schedule_overlap/TimezoneSelector.vue"
 import HelpDialog from "./HelpDialog.vue"
 import EmailInput from "./event/EmailInput.vue"
 import DatePicker from "@/components/DatePicker.vue"
+import ScreenshotUpload from "@/components/ScreenshotUpload.vue"
 import SlideToggle from "./SlideToggle.vue"
 import AlertText from "@/components/AlertText.vue"
 import OverflowGradient from "@/components/OverflowGradient.vue"
@@ -505,6 +535,7 @@ export default {
     HelpDialog,
     EmailInput,
     DatePicker,
+    ScreenshotUpload,
     SlideToggle,
     ExpandableSection,
     AlertText,
@@ -553,6 +584,9 @@ export default {
 
     // Unsaved changes
     initialEventData: {},
+    parsedScreenshot: null,
+    appliedScreenshotSlots: [],
+    appliedScreenshotIfNeeded: [],
 
     hasMounted: false,
   }),
@@ -631,6 +665,133 @@ export default {
 
   methods: {
     ...mapActions(["showError", "setEventFolder"]),
+    onScreenshotParsed(parsedPayload) {
+      this.parsedScreenshot = parsedPayload
+    },
+    onScreenshotApply(parsedPayload) {
+      const availability = this.normalizeSlotsToSelectedDays(
+        parsedPayload?.availability || []
+      )
+      const ifNeeded = this.normalizeSlotsToSelectedDays(
+        parsedPayload?.ifNeeded || []
+      )
+      if (availability.length === 0) {
+        this.showError("No availability slots found to apply.")
+        return
+      }
+
+      const timezoneValue =
+        this.timezone?.value || Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"
+
+      const uniqueDays = new Set()
+      let minStart = Number.POSITIVE_INFINITY
+      let maxEnd = Number.NEGATIVE_INFINITY
+
+      for (const slot of availability) {
+        const start = dayjs(slot.startIso).tz(timezoneValue)
+        const end = dayjs(slot.endIso).tz(timezoneValue)
+        if (!start.isValid() || !end.isValid()) continue
+
+        uniqueDays.add(start.format("YYYY-MM-DD"))
+        minStart = Math.min(minStart, start.hour() + start.minute() / 60)
+        maxEnd = Math.max(maxEnd, end.hour() + end.minute() / 60)
+      }
+
+      if (!Number.isFinite(minStart) || !Number.isFinite(maxEnd)) {
+        this.showError("Parsed slots were invalid. Please adjust manually.")
+        return
+      }
+
+      this.daysOnly = false
+      this.selectedDateOption = this.dateOptions.SPECIFIC
+      this.specificTimesEnabled = false
+      this.selectedDaysOfWeek = []
+      if (this.selectedDays.length === 0) {
+        this.selectedDays = Array.from(uniqueDays).sort()
+      }
+      this.startTime = this.roundToQuarter(minStart)
+      this.endTime = this.roundToQuarter(maxEnd)
+      this.appliedScreenshotSlots = availability
+      this.appliedScreenshotIfNeeded = ifNeeded
+    },
+    normalizeSlotsToSelectedDays(slots) {
+      if (!Array.isArray(slots) || slots.length === 0) return []
+      if (!Array.isArray(this.selectedDays) || this.selectedDays.length === 0) {
+        return slots
+      }
+
+      // Keep user-selected dates authoritative; only borrow time windows from parsed slots.
+      return slots.map((slot, idx) => {
+        const start = dayjs(slot.startIso)
+        const end = dayjs(slot.endIso)
+        if (!start.isValid() || !end.isValid()) return slot
+
+        const targetDay = this.selectedDays[idx % this.selectedDays.length]
+        const mappedStart = dayjs(
+          `${targetDay} ${start.format("HH:mm:ss")}`
+        ).toISOString()
+        const mappedEnd = dayjs(
+          `${targetDay} ${end.format("HH:mm:ss")}`
+        ).toISOString()
+
+        return {
+          ...slot,
+          startIso: mappedStart,
+          endIso: mappedEnd,
+        }
+      })
+    },
+    roundToQuarter(value) {
+      return Math.round(value * 4) / 4
+    },
+    slotsToAvailabilityTimestamps(slots) {
+      const timestamps = []
+      const incrementMinutes = this.timeIncrement || 15
+      const incrementMs = incrementMinutes * 60 * 1000
+
+      for (const slot of slots || []) {
+        const start = new Date(slot.startIso)
+        const end = new Date(slot.endIso)
+        if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) continue
+        if (end <= start) continue
+
+        for (let t = start.getTime(); t < end.getTime(); t += incrementMs) {
+          timestamps.push(new Date(t).toISOString())
+        }
+      }
+
+      return timestamps
+    },
+    async submitParsedAvailability(eventId) {
+      if (this.appliedScreenshotSlots.length === 0) return
+
+      const availability = this.slotsToAvailabilityTimestamps(
+        this.appliedScreenshotSlots
+      )
+      const ifNeeded = this.slotsToAvailabilityTimestamps(
+        this.appliedScreenshotIfNeeded
+      )
+      if (availability.length === 0 && ifNeeded.length === 0) return
+
+      if (this.authUser) {
+        await post(`/events/${eventId}/response`, {
+          guest: false,
+          availability,
+          ifNeeded,
+        })
+        return
+      }
+
+      // Guest fallback: submit parsed slots under a deterministic guest name.
+      const guestName = "Screenshot Guest"
+      localStorage.setItem(`${eventId}.guestName`, guestName)
+      await post(`/events/${eventId}/response`, {
+        guest: true,
+        name: guestName,
+        availability,
+        ifNeeded,
+      })
+    },
     blurNameField() {
       this.$refs["name-field"].blur()
     },
@@ -651,6 +812,8 @@ export default {
       this.sendEmailAfterXResponses = 3
       this.collectEmails = false
       this.startOnMonday = prefersStartOnMonday()
+      this.appliedScreenshotSlots = []
+      this.appliedScreenshotIfNeeded = []
 
       this.$refs.form.resetValidation()
     },
@@ -761,6 +924,7 @@ export default {
         // Create new event on backend
         post("/events", payload)
           .then(async ({ eventId, shortId }) => {
+            await this.submitParsedAvailability(eventId)
             if (this.authUser) {
               await this.setEventFolder({ eventId, folderId: this.folderId })
             }

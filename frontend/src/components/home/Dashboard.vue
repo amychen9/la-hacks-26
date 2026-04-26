@@ -5,7 +5,7 @@
         <div
           class="tw-text-xl tw-font-medium tw-text-dark-green sm:tw-text-2xl"
         >
-          Dashboard
+          CircleUp Dashboard
         </div>
         <div
           v-if="!isPremiumUser"
@@ -31,6 +31,41 @@
         <v-icon class="tw-text-lg">mdi-folder-plus</v-icon>
         <span class="tw-ml-2">New folder</span>
       </v-btn>
+    </div>
+
+    <div
+      class="tw-mb-4 tw-grid tw-grid-cols-1 tw-gap-3 sm:tw-grid-cols-2 lg:tw-grid-cols-3"
+    >
+      <div class="tw-rounded tw-border tw-border-light-gray-stroke tw-bg-white tw-p-3">
+        <div class="tw-text-sm tw-font-medium tw-text-black">Calendar Upload</div>
+        <div class="tw-text-xs tw-text-very-dark-gray">
+          Upload screenshot and parse availability.
+        </div>
+      </div>
+      <div class="tw-rounded tw-border tw-border-light-gray-stroke tw-bg-white tw-p-3">
+        <div class="tw-text-sm tw-font-medium tw-text-black">Parsed Availability</div>
+        <div class="tw-text-xs tw-text-very-dark-gray">
+          Review confidence and edit extracted slots.
+        </div>
+      </div>
+      <div class="tw-rounded tw-border tw-border-light-gray-stroke tw-bg-white tw-p-3">
+        <div class="tw-text-sm tw-font-medium tw-text-black">Invite Collaborators</div>
+        <div class="tw-text-xs tw-text-very-dark-gray">
+          Share a session link and collect responses.
+        </div>
+      </div>
+      <div class="tw-rounded tw-border tw-border-light-gray-stroke tw-bg-white tw-p-3">
+        <div class="tw-text-sm tw-font-medium tw-text-black">Overlap Recommendations</div>
+        <div class="tw-text-xs tw-text-very-dark-gray">
+          Compare where everyone is free.
+        </div>
+      </div>
+      <div class="tw-rounded tw-border tw-border-light-gray-stroke tw-bg-white tw-p-3 sm:tw-col-span-2 lg:tw-col-span-2">
+        <div class="tw-text-sm tw-font-medium tw-text-black">Logistics Suggestions</div>
+        <div class="tw-text-xs tw-text-very-dark-gray">
+          Get suggested where/how to meet based on meeting type and location.
+        </div>
+      </div>
     </div>
 
     <div>

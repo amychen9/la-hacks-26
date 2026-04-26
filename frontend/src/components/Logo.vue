@@ -1,12 +1,10 @@
 <template>
-  <v-img
-    :alt="alt"
-    class="shrink tw-cursor-pointer"
-    contain
-    :src="src"
-    transition="fade-transition"
-    :width="width"
-  />
+  <div class="tw-flex tw-items-center tw-gap-2 tw-cursor-pointer">
+    <v-icon :size="isPhone ? 18 : 20" class="tw-text-green">mdi-circle-outline</v-icon>
+    <span class="tw-font-semibold tw-text-very-dark-gray" :class="isPhone ? 'tw-text-base' : 'tw-text-lg'">
+      {{ brandText }}
+    </span>
+  </div>
 </template>
 
 <script>
@@ -26,32 +24,11 @@ export default {
     isPhone() {
       return isPhone(this.$vuetify)
     },
-    alt() {
-      if (this.type === "betterwhen2meet") {
-        return "Betterwhen2meet Logo"
+    brandText() {
+      if (this.type === "betterwhen2meet" || this.type === "aprilfools") {
+        return "CircleUp"
       }
-
-      return "Timeful Logo"
-    },
-    src() {
-      switch (this.type) {
-        case "timeful":
-          return require("@/assets/timeful_logo_with_text.png")
-        case "betterwhen2meet":
-          return require("@/assets/april_fools_logo.png")
-        case "aprilfools":
-          return require("@/assets/april_fools_logo.png")
-      }
-    },
-    width() {
-      switch (this.type) {
-        case "timeful":
-          return this.isPhone ? 90 : 110
-        case "betterwhen2meet":
-          return this.isPhone ? 200 : 300
-        case "aprilfools":
-          return this.isPhone ? 200 : 300
-      }
+      return "CircleUp"
     },
   },
 }

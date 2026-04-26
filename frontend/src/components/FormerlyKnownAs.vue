@@ -6,12 +6,9 @@
       <div class="-tw-mt-3.5 tw-text-dark-gray">
         <v-icon>mdi-arrow-up-left</v-icon>
       </div>
-      <a
-        href="/blog/schej-is-now-timeful/"
-        class="tw-cursor-pointer tw-select-none tw-text-sm tw-text-dark-gray hover:tw-underline"
-      >
-        Formerly known as "Schej"
-      </a>
+      <div class="tw-select-none tw-text-sm tw-text-dark-gray">
+        CircleUp beta (built on open-source Timeful)
+      </div>
     </div>
   </div>
 </template>

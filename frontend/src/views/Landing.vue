@@ -44,52 +44,37 @@
             id="header"
             class="tw-mb-4 tw-text-center tw-text-2xl tw-font-medium sm:tw-text-4xl lg:tw-text-4xl xl:tw-text-5xl"
           >
-            <h1>Find a time to meet</h1>
+            <h1>Upload a calendar screenshot. Schedule in seconds.</h1>
           </div>
 
           <div
             class="lg:tw-text-md tw-text-left tw-text-center tw-text-sm tw-text-very-dark-gray sm:tw-text-lg md:tw-text-lg xl:tw-text-lg"
           >
-            Coordinate group meetings without the back and forth.
-            <br class="tw-hidden sm:tw-block" />
-            Integrates with your
-            <v-tooltip
-              top
-              content-class="tw-bg-very-dark-gray tw-shadow-lg tw-opacity-100"
-            >
-              <template v-slot:activator="{ on, attrs }">
-                <span
-                  class="tw-cursor-pointer tw-border-b tw-border-dashed tw-border-dark-gray"
-                  v-bind="attrs"
-                  v-on="on"
-                  >calendar</span
-                >
-              </template>
-              <span
-                >Timeful allows you to autofill your availability from Google
-                Calendar,<br class="tw-hidden sm:tw-block" />
-                Outlook, Apple Calendar, or an ICS feed URL.</span
-              > </v-tooltip
-            >.
+            CircleUp helps groups find overlap fast with screenshot parsing,
+            shared session links, and smart meeting recommendations.
           </div>
         </div>
 
-        <div class="tw-mb-12 tw-space-y-2">
+        <div class="tw-mb-12 tw-flex tw-flex-col tw-gap-2 sm:tw-flex-row">
           <v-btn
             class="tw-block tw-self-center tw-rounded-lg tw-bg-green tw-px-10 tw-text-base sm:tw-px-10 lg:tw-px-12"
             dark
-            @click="authUser ? openDashboard() : (newDialog = true)"
+            @click="openUploadCalendar"
             large
             :x-large="$vuetify.breakpoint.mdAndUp"
           >
-            {{ authUser ? "Open dashboard" : "Create event" }}
+            Upload Calendar
           </v-btn>
-          <div
-            v-if="!authUser"
-            class="tw-text-center tw-text-xs tw-text-dark-gray sm:tw-text-sm"
+          <v-btn
+            class="tw-block tw-self-center tw-rounded-lg tw-px-10 tw-text-base sm:tw-px-10 lg:tw-px-12"
+            outlined
+            color="green"
+            @click="startSharedSession"
+            large
+            :x-large="$vuetify.breakpoint.mdAndUp"
           >
-            It's free! No login required.
-          </div>
+            Start Shared Session
+          </v-btn>
         </div>
         <div class="tw-relative tw-w-full">
           <!-- Green background -->
@@ -140,7 +125,7 @@
         <div
           class="tw-mb-4 tw-text-center tw-text-2xl tw-font-medium sm:tw-text-3xl lg:tw-text-4xl"
         >
-          How it works
+          Basic User Flow
         </div>
         <div
           v-for="(step, i) in howItWorksSteps"
@@ -153,10 +138,8 @@
           </div>
         </div>
       </div>
-      <div
-        class="tw-mb-6 tw-mt-10 tw-text-center tw-text-3xl tw-font-medium md:tw-mb-12 md:tw-mt-20 md:tw-text-6xl"
-      >
-        It's that simple.
+      <div class="tw-mb-6 tw-mt-10 tw-text-center tw-text-xl tw-font-medium md:tw-mb-12 md:tw-mt-20 md:tw-text-3xl">
+        No login required for quick hackathon onboarding.
       </div>
       <v-img
         alt="schej character"
@@ -314,7 +297,7 @@ export default {
   name: "Landing",
 
   metaInfo: {
-    title: "Timeful (formerly Schej) - Find a time to meet",
+    title: "CircleUp - Screenshot to schedule in seconds",
   },
 
   components: {
@@ -341,9 +324,11 @@ export default {
     newDialog: false,
     githubSnackbar: true,
     howItWorksSteps: [
-      "Create a Timeful event",
-      "Share the Timeful link with your group for them to fill out",
-      "See where everybody's availability overlaps!",
+      "Upload a calendar screenshot",
+      "Availability is extracted and normalized",
+      "Share the session link and collect participant uploads",
+      "Find shared free times across collaborators",
+      "Get recommended meeting choice and logistics",
     ],
     faqs: [
       {
@@ -511,6 +496,16 @@ export default {
     },
     openDashboard() {
       this.$router.push({ name: "home" })
+    },
+    openUploadCalendar() {
+      this.newDialog = true
+    },
+    startSharedSession() {
+      if (this.authUser) {
+        this.openDashboard()
+      } else {
+        this.newDialog = true
+      }
     },
   },
 

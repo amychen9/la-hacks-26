@@ -6,16 +6,10 @@
         <div>
           <div class="tw-mb-3 tw-flex tw-items-center">
             <v-icon class="tw-mr-1 tw-text-white">mdi-calendar-blank</v-icon>
-            <span class="tw-text-2xl tw-font-medium">timeful</span>
+            <span class="tw-text-2xl tw-font-medium">CircleUp</span>
           </div>
           <div class="tw-mb-6 tw-leading-snug">
-            Made with 💚 by
-            <a
-              href="https://x.com/jonathanzliu/"
-              target="_blank"
-              class="tw-text-white tw-underline"
-              >@jonathanzliu</a
-            >
+            Built at LA Hacks with screenshot parsing + AI scheduling.
           </div>
           <div class="tw-mb-6 tw-flex tw-items-center tw-space-x-3">
             <a href="https://x.com/timeful_app" aria-label="X" target="_blank">
@@ -97,7 +91,7 @@
                 <div class="tw-text-sm">
                   Email support at
                   <span class="tw-text-green tw-underline"
-                    >contact@timeful.app</span
+                    >team@schedulrai.app</span
                   >
                 </div>
               </v-card>
@@ -116,26 +110,26 @@
         <div class="tw-flex tw-flex-col tw-gap-2">
           <div class="tw-mb-1 tw-font-bold">Articles</div>
           <div>
-            <a href="/blog/schej-is-now-timeful/" class="tw-text-sm"
-              >Schej is now Timeful</a
+            <a href="#" class="tw-text-sm"
+              >Product roadmap (coming soon)</a
             >
           </div>
           <div>
-            <a href="/blog/about/" class="tw-text-sm"
-              >Welcome to the Timeful blog!</a
+            <a href="#" class="tw-text-sm"
+              >How screenshot parsing works</a
             >
           </div>
           <div>
-            <a href="/blog/doodle/" class="tw-text-sm">Timeful vs Doodle</a>
+            <a href="#" class="tw-text-sm">Overlap ranking approach</a>
           </div>
           <div>
-            <a href="/blog/when2meet/" class="tw-text-sm"
-              >Timeful vs When2meet</a
+            <a href="#" class="tw-text-sm"
+              >Context-aware logistics recommendations</a
             >
           </div>
           <div>
-            <a href="/blog/gcalandwhen2meet/" class="tw-text-sm"
-              >How to use When2meet with Google Calendar</a
+            <a href="#" class="tw-text-sm"
+              >Fetch.ai agent orchestration notes</a
             >
           </div>
         </div>

@@ -107,7 +107,7 @@ export default {
   name: "Home",
 
   metaInfo: {
-    title: "Home - Timeful",
+    title: "Home - CircleUp",
   },
 
   components: {
@@ -166,11 +166,11 @@ export default {
     createFolder() {},
     convertW2M() {
       this.showW2MDialog = true
-      this.$posthog?.capture("convert_when2meet_to_timeful_clicked")
+      this.$posthog?.capture("convert_when2meet_to_schedulrai_clicked")
     },
     importTimeful() {
       this.showImportDialog = true
-      this.$posthog?.capture("import_timeful_event_clicked")
+      this.$posthog?.capture("import_event_clicked")
     },
   },
 
